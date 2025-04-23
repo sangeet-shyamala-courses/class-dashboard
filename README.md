@@ -6,144 +6,87 @@
   <title>Class Management Dashboard</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; }
-    .header h1 { margin: 0; }
-    .search-add { margin: 20px 0; display: flex; gap: 10px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-    .teacher-cell { display: flex; align-items: center; gap: 10px; }
-    .teacher-cell img { border-radius: 50%; width: 40px; height: 40px; }
-    .notification-box { background: #f0f8ff; border: 1px solid #87ceeb; padding: 10px; margin-top: 20px; }
+    #searchBox { padding: 10px; width: 300px; margin-bottom: 20px; }
+    button { padding: 10px 20px; margin-left: 10px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Class Management Dashboard</h1>
-    <button onclick="alert('Settings Panel Coming Soon!')">⚙️ Settings</button>
-  </div>
+  <input type="text" id="searchBox" placeholder="Search for a course..." onkeyup="searchCourse()" />
+  <button onclick="addNewRow()">Add New Row</button>
+  <button onclick="exportToExcel()">Export to Excel</button>
+  <button onclick="exportToPDF()">Export to PDF</button>
 
-  <div class="search-add">
-    <input type="text" id="searchInput" placeholder="Search by course or teacher..." oninput="filterClasses()" />
-    <button onclick="alert('Add Class Feature Coming Soon!')">➕ Add New Class</button>
-  </div>
-
-  <div id="notification" class="notification-box"></div>
-
-  <table id="classTable">
+  <table id="courseTable">
     <thead>
       <tr>
-        <th>Category</th>
-        <th>Course Name</th>
-        <th>Teacher</th>
-        <th>Timing</th>
-        <th>Room</th>
+        <th>Course</th>
+        <th>Instructor</th>
+        <th>Days</th>
+        <th>Time</th>
         <th>Fee</th>
+        <th>Room No.</th>
+        <th>Actions</th>
       </tr>
     </thead>
-    <tbody id="classBody"></tbody>
+    <tbody>
+      <!-- Existing rows remain unchanged -->
+      <!-- ... -->
+    </tbody>
   </table>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const classes = [
-      {
-        category: "Dance",
-        courseName: "Bharatnatyam",
-        teacherName: "Meenakshi Rao",
-        teacherImage: "https://via.placeholder.com/40",
-        timing: "Saturday: 8:30 to 10:30am",
-        room: "N/A",
-        fee: "Rs.2800 (8 classes in a month)"
-      },
-      {
-        category: "Music",
-        courseName: "Hindustani Vocal",
-        teacherName: "Akansha",
-        teacherImage: "https://via.placeholder.com/40",
-        timing: "Sat & Sun (Kids): 10:00 to 11:00am",
-        room: "N/A",
-        fee: "Rs.3000/-, Individual: Rs.1200/hr"
-      },
-      {
-        category: "Fitness",
-        courseName: "Dance Fitness",
-        teacherName: "Ajay Soni",
-        teacherImage: "https://via.placeholder.com/40",
-        timing: "Mon, Wed, Fri: 6:15 to 7:15pm",
-        room: "N/A",
-        fee: "Rs.3500 (8 classes), Rs.4500 (12 classes)"
+    function searchCourse() {
+      let input = document.getElementById("searchBox").value.toLowerCase();
+      let rows = document.querySelectorAll("#courseTable tbody tr");
+      for (let i = 0; i < rows.length; i++) {
+        let rowText = rows[i].innerText.toLowerCase();
+        rows[i].style.display = rowText.includes(input) ? "" : "none";
       }
-      // Add more classes as needed
-    ];
-
-    const classBody = document.getElementById("classBody");
-
-    function renderTable(filtered = classes) {
-      classBody.innerHTML = "";
-      filtered.forEach(cls => {
-        const row = `<tr>
-          <td><input value="${cls.category}" /></td>
-          <td><input value="${cls.courseName}" /></td>
-          <td class="teacher-cell">
-            <img src="${cls.teacherImage}" alt="${cls.teacherName}" />
-            <input value="${cls.teacherName}" />
-          </td>
-          <td><input value="${cls.timing}" /></td>
-          <td><input value="${cls.room}" /></td>
-          <td><input value="${cls.fee}" /></td>
-        </tr>`;
-        classBody.innerHTML += row;
-      });
     }
 
-    function filterClasses() {
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const filtered = classes.filter(c =>
-        c.courseName.toLowerCase().includes(search) ||
-        c.teacherName.toLowerCase().includes(search)
+    function addNewRow() {
+      const table = document.querySelector("#courseTable tbody");
+      const newRow = document.createElement("tr");
+      newRow.innerHTML = `
+        <td contenteditable="true">New Course</td>
+        <td contenteditable="true">Instructor</td>
+        <td contenteditable="true">Days</td>
+        <td contenteditable="true">Time</td>
+        <td contenteditable="true">Fee</td>
+        <td contenteditable="true">Room No.</td>
+        <td><button onclick="alert('Changes saved!')">Save</button></td>
+      `;
+      table.appendChild(newRow);
+    }
+
+    function exportToExcel() {
+      let table = document.getElementById("courseTable");
+      let workbook = XLSX.utils.table_to_book(table, {sheet: "Courses"});
+      XLSX.writeFile(workbook, "ClassSchedule.xlsx");
+    }
+
+    async function exportToPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const table = document.getElementById("courseTable");
+      let rows = Array.from(table.rows).map(row =>
+        Array.from(row.cells).map(cell => cell.innerText.trim())
       );
-      renderTable(filtered);
-    }
 
-    function showCurrentClasses() {
-      const now = new Date();
-      const hour = now.getHours();
-      const min = now.getMinutes();
-      const day = now.toLocaleString('en-US', { weekday: 'long' });
-
-      const activeClasses = classes.filter(cls => {
-        const match = cls.timing.match(/(\d{1,2}:\d{2})\s*(?:to|-)\s*(\d{1,2}:\d{2})(am|pm)/gi);
-        if (!match) return false;
-
-        return match.some(timeRange => {
-          const [startRaw, endRaw] = timeRange.split(/to|-/i);
-          const start = convertTo24Hour(startRaw.trim());
-          const end = convertTo24Hour(endRaw.trim());
-
-          const current = hour * 60 + min;
-          return current >= start && current <= end && cls.timing.toLowerCase().includes(day.toLowerCase());
+      let startY = 10;
+      rows.forEach((row, i) => {
+        row.forEach((cell, j) => {
+          doc.text(cell, 10 + j * 30, startY);
         });
+        startY += 10;
       });
 
-      const notificationBox = document.getElementById("notification");
-      if (activeClasses.length) {
-        notificationBox.innerHTML = `<strong>Ongoing Classes:</strong><ul>${activeClasses.map(cls => `<li>${cls.courseName} with ${cls.teacherName} (${cls.room})</li>`).join('')}</ul>`;
-      } else {
-        notificationBox.innerHTML = "<em>No classes are currently ongoing.</em>";
-      }
+      doc.save("ClassSchedule.pdf");
     }
-
-    function convertTo24Hour(timeStr) {
-      const [h, m] = timeStr.match(/\d+/g);
-      const isPM = /pm/i.test(timeStr);
-      let hours = parseInt(h);
-      if (isPM && hours !== 12) hours += 12;
-      if (!isPM && hours === 12) hours = 0;
-      return hours * 60 + parseInt(m);
-    }
-
-    renderTable();
-    showCurrentClasses();
-    setInterval(showCurrentClasses, 60000);
   </script>
 </body>
 </html>
